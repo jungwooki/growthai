@@ -134,6 +134,7 @@ def source_view(p):
     return dict(id=p['id'],source=p['source'],name=SOURCES[p['source']]['name'],page=p['page'],excerpt=p['text'][:700],url=f'api/sources/{p["source"]}#page={p["page"]}')
 
 @app.get('/')
+@app.get('/index.html', include_in_schema=False)
 def index():return FileResponse(ROOT/'index.html')
 @app.get('/workspace.css')
 def workspace_css():return FileResponse(ROOT/'frontend/css/workspace.css')
@@ -148,13 +149,19 @@ def js():return FileResponse(ROOT/'frontend/js/app.js')
 @app.get('/styles.css')
 def css():return FileResponse(ROOT/'frontend/css/styles.css')
 @app.get('/api/status')
-def status():return dict(hosted=ACCESS.production,ai_configured=bool(os.getenv('OPENAI_API_KEY')),model=os.getenv('OPENAI_MODEL','gpt-4.1'),source_count=len(MANIFEST),page_count=len(PAGES),text_pages=sum(p['readable'] for p in PAGES))
+def status():
+    missing=[s['id'] for s in MANIFEST if not (ROOT/'data/sources'/s['name']).is_file()]
+    return dict(hosted=ACCESS.production,ai_configured=bool(os.getenv('OPENAI_API_KEY')),references_ready=not missing,missing_sources=missing,upload_limit_bytes=4_000_000 if os.getenv('VERCEL')=='1' else 120*1024*1024,model=os.getenv('OPENAI_MODEL','gpt-4.1'),source_count=len(MANIFEST),page_count=len(PAGES),text_pages=sum(p['readable'] for p in PAGES))
 @app.get('/api/library')
-def library():return MANIFEST
+def library():return [{**s,'available':(ROOT/'data/sources'/s['name']).is_file()} for s in MANIFEST]
 @app.get('/api/sources/{sid}')
 def source(sid:str):
     if sid not in SOURCES:raise HTTPException(404,'근거 파일을 찾을 수 없습니다.')
-    return FileResponse(ROOT/'data/sources'/SOURCES[sid]['name'])
+    path=ROOT/'data/sources'/SOURCES[sid]['name']
+    if not path.is_file():raise HTTPException(503,'배포 서버에 근거 원본이 없습니다. data/sources 자료를 비공개 배포 환경에 설치해주세요.')
+    if os.getenv('VERCEL')=='1' and path.stat().st_size>4_000_000:
+        raise HTTPException(413,'이 원본은 현재 웹 배포의 다운로드 한도를 초과합니다. 로컬 자료실에서 열어주세요.')
+    return FileResponse(path)
 @app.get('/api/search')
 def search(q:str='초음파 골단 성장'):return [source_view(p) for p in search_pages(q)]
 @app.get('/api/chart')
@@ -284,7 +291,10 @@ async def ask_ai(p,metrics,selected,attachments,file_summary=None):
     selected,visual=select_references(PAGES,p.sex,selected)
     file_summary=file_summary or []
     context=ai_patient_context(p,metrics)
-    reference_content=render_references(selected,visual,SOURCES,ROOT)
+    try:
+        reference_content=render_references(selected,visual,SOURCES,ROOT)
+    except (OSError,ValueError,RuntimeError):
+        raise HTTPException(503,'AI 비교에 필요한 근거 원본이 없거나 읽을 수 없습니다. 배포 서버의 data/sources 자료를 확인해주세요.')
     # Static source prefix first permits provider prompt caching across evaluations.
     # Visual pages retain their full images; avoid also sending duplicate OCR text.
     reference_pages=[{**page,'text':'' if page['id'] in visual else page['text'],

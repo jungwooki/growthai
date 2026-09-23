@@ -4,3 +4,8 @@ __pycache__/
 .pytest_cache/
 data/sources/
 artifacts/
+
+.DS_Store
+.vercel/
+.env.*
+!.env.example

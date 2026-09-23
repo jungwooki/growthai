@@ -1,4 +1,79 @@
-# 별도 웹주소 배포
+# GitHub → Vercel 배포 및 오류 해결
+
+2026-09-24 점검: `https://growthai-two.vercel.app/api/status`에서 HTTP 503과
+`웹 서비스 접속 설정을 완료해주세요.` 응답을 확인했습니다.
+이는 Python 서버가 실행된 뒤 접속 설정 검사에서 차단된 상태입니다.
+화면의 index 파일만 바꾸거나 재배포만 반복해도 환경변수가 빠져 있으면 해결되지 않습니다.
+
+## 현재 주소에서 필요한 설정
+
+Vercel → growthai 프로젝트 → Settings → Environment Variables에서 아래를 설정합니다.
+Production에 반드시 적용하고, Preview를 사용할 경우 Preview에도 설정합니다.
+
+| 이름 | 값 |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `ALLOWED_HOSTS` | `growthai-two.vercel.app` (추가 도메인은 쉼표로 구분) |
+| `APP_USERNAME` | 직접 정한 의료진 로그인 아이디 |
+| `APP_PASSWORD` | 직접 정한 **16자 이상** 로그인 비밀번호 |
+| `OPENAI_API_KEY` | AI 사용 시 서버용 API 키 |
+| `OPENAI_MODEL` | `gpt-4.1` |
+
+API 키와 비밀번호는 GitHub 또는 HTML에 넣지 않습니다.
+설정 저장 후 Deployments에서 최신 코드로 **Redeploy**합니다. 환경변수 수정은 기존 배포에 소급 적용되지 않습니다.
+`/` 접속 시 브라우저 로그인 창이 나오면 APP_USERNAME/APP_PASSWORD를 입력합니다.
+OPENAI_API_KEY가 없어도 기본 수치 비교는 가능합니다.
+
+## 프로젝트 구조와 빌드 설정
+
+별도 저장소 `jungwooki/growthai`는 `server.py`, `index.html`, `requirements.txt`,
+`vercel.json`이 저장소 최상단에 있습니다. Vercel Root Directory는 저장소 루트(`.`)입니다.
+상위 작업공간 전체를 연결한 경우에만 Root Directory를 `growthai`로 지정합니다.
+
+- Framework Preset: **FastAPI** (`vercel.json`에 명시).
+- Build Command / Install Command / Output Directory: 기존 수동 Override를 끄고 기본값 사용.
+- `pyproject.toml`의 진입점은 `server:app`, Python 버전은 `.python-version`의 3.12.
+- `server.py` → `backend/server.py`가 `/`, `/index.html`, `/api/*`를 제공.
+- `frontend/`는 CSS·JS·이미지. `data/*.json`은 계산·검색 기준 데이터.
+- 정적 SPA용 `/(.*) → /index.html` rewrite는 사용하지 않습니다.
+- 함수 실행시간은 300초로 설정했습니다. 실제 플랜·프로젝트 설정에서 적용 여부를 확인합니다.
+
+## 근거 원본과 업로드 범위
+
+`data/sources/`의 원본 11개(약 44MB)는 `.gitignore`에서 제외되어 있으므로
+**GitHub 연동 배포에는 원본이 없습니다.** 현재 수정본은 누락 여부를 표시하고,
+기본 계산·텍스트 검색은 계속 제공하며 AI 영상 비교는 원본이 준비되기 전 실행하지 않습니다.
+원본을 건너뛰고 AI가 비교한 것처럼 결과를 만들지 않습니다.
+
+원본은 승인된 비공개 배포 번들 또는 비공개 저장소 연동으로 제공해야 합니다.
+기존 `scripts/package_web.py`로 만드는 로컬 비공개 전달 ZIP에는 원본이 포함됩니다.
+이 ZIP을 생성하는 것만으로 GitHub 연동 배포에 원본이 추가되지는 않습니다.
+현재 비공개 객체 저장소 연동은 구현되지 않았습니다.
+
+Vercel 함수의 4.5MB 요청·응답 제한 때문에 이 앱의 첨부 합계를 **4MB**로 제한했습니다
+(폼 데이터 여유분 확보). 로컬/Render는 기존 120MB 제한을 유지합니다.
+4MB가 넘는 근거 원본 다운로드에는 안내 오류를 반환합니다.
+많은 고해상도 사진·큰 PDF를 그대로 다루려면 기존 Render/Docker 배포를 사용하거나
+인증된 비공개 객체 저장소 직접 업로드를 추가해야 합니다.
+
+## 확인 순서
+
+1. `/healthz`: HTTP 200, `{"status":"ok"}`.
+2. `/`: 로그인 창 → 입력 후 워크스페이스.
+3. `/api/status`: 로그인 상태에서 JSON. 원본 누락은 `missing_sources` 확인.
+4. 가상 예시 → AI 끄기 → 기본 수치 확인 → 성장 곡선.
+5. 원본과 API 키를 모두 준비한 후에만 AI 검증.
+
+코드 자동 테스트와 로컬 Chrome 검증은 완료했습니다. Vercel의 환경변수 변경,
+GitHub push 및 새 배포는 이 로컬 수정 작업에서 실행하지 않았습니다.
+
+공식 문서: [FastAPI 배포](https://vercel.com/docs/frameworks/backend/fastapi),
+[함수 제한](https://vercel.com/docs/functions/limitations),
+[Python 런타임](https://vercel.com/docs/functions/runtimes/python).
+
+---
+
+# Render / Docker 대안
 
 현재 상태: 웹 호스팅용 코드·접속 인증·배포 파일 준비. 실제 호스팅 배포와 주소 발급은 아직 하지 않았습니다. 기존 로컬 서버는 그대로 사용할 수 있습니다.
 

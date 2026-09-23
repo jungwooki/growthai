@@ -38,7 +38,7 @@ class WebAccess:
 
     def check(self,request):
         if self.production and (not self.hosts or not self.username or len(self.password)<16):
-            return JSONResponse({'detail':'웹 서비스 접속 설정을 완료해주세요.'},503)
+            return JSONResponse({'detail':'웹 서비스 접속 설정을 완료해주세요. APP_USERNAME, 16자 이상 APP_PASSWORD, ALLOWED_HOSTS(실제 배포 도메인)를 환경변수에 설정하고 재배포해주세요.'},503)
         if request.url.hostname not in self.hosts:
             message=('배포 주소를 ALLOWED_HOSTS에 등록하고 다시 배포해주세요.' if self.production else '이 Mac에서는 http://127.0.0.1:8093 으로 접속해주세요. 다른 주소는 ALLOWED_HOSTS에 등록해야 합니다.')
             return JSONResponse({'detail':'허용되지 않은 접속 주소입니다. '+message},400)
@@ -69,4 +69,6 @@ class WebAccess:
             return JSONResponse({'detail':'잘못된 요청 크기입니다.'},400)
         if length>125*1024*1024:
             return JSONResponse({'detail':'전체 업로드는 120MB 이하로 줄여주세요.'},413)
+        if os.getenv('VERCEL')=='1' and length>4_400_000:
+            return JSONResponse({'detail':'이 배포에서는 첨부 합계를 4MB 이하로 줄여주세요.'},413)
         return None
