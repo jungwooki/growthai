@@ -1,0 +1,41 @@
+/* MPS workspace, adapted from emr/src/styles/design-system.css. */
+:root{--ink:#202333;--muted:#697386;--green:#2563eb;--green-dark:#1d4ed8;--line:#e8e9f2;--bg:#f8f9fc;--pale:#f3effe}
+body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;font-size:15px;color:var(--ink)}
+.sidebar{background:#fff;padding:30px 20px;border-color:var(--line)}
+.mps-logo{width:35px;height:35px;object-fit:contain;margin-right:4px}.brand{color:#202333}.brand small{letter-spacing:2px;color:#697386}
+.workspace-label{color:#697386}.sidebar-card,.intro-strip,.evidence-summary,.quiet-note{display:none}
+.nav-button{border-radius:12px;color:#697386;padding:14px}.nav-button.active{background:#eeebff;color:#5145cd}.sidebar-bottom{color:#697386}
+.topbar{background:rgba(255,255,255,.94);border-color:var(--line)}
+main{background:linear-gradient(180deg,#f0ebff 0,#faf8ff 240px,#f8f9fc 520px);max-width:none;padding:34px}
+.page-heading h1{font-size:32px;letter-spacing:-1.2px;color:#202333}.page-heading p{font-size:14px;color:#697386}.eyebrow{color:#7564ad;letter-spacing:1.6px;font-size:10px}
+.steps{margin:24px 0;color:#697386}.steps .current{color:#2563eb}
+.assessment-grid{grid-template-columns:minmax(360px,.95fr) minmax(420px,1.15fr);gap:24px;align-items:start}
+.card{border:1px solid #e8e9f2;border-radius:20px;box-shadow:0 5px 22px #20233304;padding:25px;background:#fff}
+.card-heading h2{font-size:17px;color:#202333;letter-spacing:-.4px}.section-number{color:#5145cd}.small-pill{background:#f3effe;color:#5145cd;border-radius:8px}
+input,select,textarea{border-color:#dfe3ec!important;border-radius:10px!important;color:#202333;font-size:14px!important;background:#fcfcfe!important}
+input:focus,textarea:focus,select:focus{outline:3px solid #dbe7ff!important;border-color:#2563eb!important}
+label,.fields label{font-size:13px;color:#525d70}.memo-card textarea{line-height:1.7}.subtle-note,#memo-feedback{color:#697386;font-size:12px}
+.button{border-radius:11px;min-height:43px;font-weight:600}.button.primary{background:#2563eb;border-color:#2563eb;color:#fff}.button.secondary{background:#fff;border-color:#e0e4ee;color:#49526a}
+.dropzone{border-color:#cfd7ee;background:#f8faff;border-radius:13px}.compact strong{font-size:12px}.compact small{font-size:10px}.photo-heading strong{font-size:14px}.photo-heading span{font-size:12px;color:#697386}.upload-icon{background:#edf2ff;color:#2563eb}
+.result-card{min-height:540px}.result-empty h3{font-size:21px;color:#202333}.result-empty p{font-size:14px;color:#697386}.result-bottom{font-size:11px;color:#697386}
+.report-top h2{font-size:22px}.report-meta{font-size:14px;color:#525d70;line-height:1.8}.report-tag{background:#f3effe;color:#5145cd;border-radius:7px}
+.analysis-status{padding:12px 15px;background:#eff6ff;border-color:#dce7fa;border-radius:12px}.analysis-status:not(.failed) p{display:none}.analysis-status strong{color:#2563eb}
+.clinical-disclosure{margin:14px 0;padding:10px 13px;background:#fafaff;border:1px solid #e8e9f2;border-radius:10px;color:#697386;font-size:12px}.clinical-disclosure summary{cursor:pointer}.clinical-disclosure p{color:#697386}
+.clinical-highlights{gap:10px}.clinical-highlights>div{border-color:#e8e9f2;background:#fafaff;border-radius:13px;padding:18px}.clinical-highlights>div:nth-child(2){background:#f0ebff;order:-1}.clinical-highlights span{font-size:13px;color:#697386}.clinical-highlights strong{font-size:21px;color:#5145cd}
+.clinical-section p{font-size:14px;line-height:1.85;color:#414b60}.clinical-section h3{font-size:16px;color:#202333}.clinical-section small{color:#697386;font-size:11px}.estimate-box{background:#f7f9ff;border-left-color:#2563eb;border-radius:0 12px 12px 0}.estimate-box>strong{color:#2563eb}
+.citation summary{font-size:11px;color:#8790a1}.citation{opacity:.85}.metrics .metric{background:#fafbfe;border-color:#e8e9f2}.previous-record{background:#faf9ff;border-color:#e8e3f6}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #93b4ff;outline-offset:3px}
+@media(max-width:1100px){main{padding:22px}.assessment-grid{grid-template-columns:minmax(0,1fr)}.result-card{min-height:400px}}
+@media(max-width:680px){main{padding:18px 12px}.page-heading h1{font-size:26px}.card{padding:18px;border-radius:16px}.page-heading p{font-size:13px}.clinical-highlights strong{font-size:18px}.mps-logo{width:28px;height:28px}}
+@media print{main{background:#fff;padding:0}.clinical-disclosure,.citation:not([open]){display:none}.card{box-shadow:none}}
+
+/* Layout constraints apply consistently to direct HTML and server previews. */
+.form-column,.result-column,.assessment-grid>*{min-width:0}
+.card,.clinical-report,.report-section{overflow-wrap:anywhere}
+.card-heading{gap:10px;flex-wrap:wrap}.page-heading>div:first-child{min-width:0}
+textarea{max-width:100%;resize:vertical}input,select{min-width:0;max-width:100%}
+.mps-logo{flex:0 0 35px;max-width:35px;display:block}
+.fields{min-width:0}.fields>*{min-width:0}
+.clinical-highlights>div{flex-wrap:wrap}.clinical-highlights strong{overflow-wrap:anywhere}
+.steps .current b{background:#2563eb}.empty-features{color:#697386}
+@media(max-width:680px){.shell{margin-left:0}.sidebar{position:relative;width:100%;height:auto;padding:16px;inset:auto}.sidebar nav{display:flex;flex-wrap:wrap;margin-top:16px}.sidebar .workspace-label,.sidebar-bottom{display:none}.topbar{padding:12px 16px;height:auto;gap:12px;flex-wrap:wrap}.assessment-grid{display:block}.result-column{margin-top:22px}.photo-groups{gap:12px}.steps{font-size:11px;gap:8px}.clinical-highlights>div{align-items:flex-start;flex-direction:column}.page-actions{flex-direction:row;flex-wrap:wrap}}
