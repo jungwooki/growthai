@@ -48,3 +48,18 @@ def test_render_hostname_used(monkeypatch):
 def test_auth_malformed_is_safe(hosted):
  for auth in ['broken','Basic ~~~','Bearer anything','Basic YQ==']:
   assert hosted.get('/',headers={'authorization':auth}).status_code==401
+
+def test_configured_host_accepts_url_and_port(monkeypatch):
+ monkeypatch.setenv('ALLOWED_HOSTS','https://growth.example/, localhost:8093, [::1]:8093')
+ config=WebAccess.from_env()
+ assert {'growth.example','localhost','::1'}<=config.hosts
+ assert 'other.example' not in config.hosts
+
+def test_vercel_enforces_login_and_exact_host(monkeypatch):
+ monkeypatch.setenv('VERCEL','1')
+ monkeypatch.setenv('APP_ENV','local')
+ monkeypatch.setenv('VERCEL_PROJECT_PRODUCTION_URL','growthai-two.vercel.app')
+ config=WebAccess.from_env()
+ assert config.production
+ assert 'growthai-two.vercel.app' in config.hosts
+ assert 'other.vercel.app' not in config.hosts
