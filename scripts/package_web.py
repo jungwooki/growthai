@@ -3,7 +3,7 @@ from pathlib import Path
 import json, zipfile
 ROOT=Path(__file__).resolve().parents[1]
 OUTPUT=ROOT/'artifacts/mps-growth-web.zip'
-allow=['vercel.json','pyproject.toml','.python-version','.vercelignore','frontend/css/workspace.css','frontend/assets/mps-symbol.png','backend/__init__.py','backend/server.py','server.py','backend/web_access.py','backend/vision_report.py','backend/growth_history.py','index.html','frontend/js/app.js','frontend/js/memo-parser.js','frontend/js/clinical-report.js','frontend/css/styles.css','requirements.txt','Dockerfile','.dockerignore','render.yaml','.env.example','DEPLOY.md','data/manifest.json','data/pages.json','data/growth.json']
+allow=['vercel.json','pyproject.toml','uv.lock','.python-version','.vercelignore','frontend/css/workspace.css','frontend/assets/mps-symbol.png','backend/__init__.py','backend/server.py','server.py','backend/web_access.py','backend/vision_report.py','backend/growth_history.py','index.html','frontend/js/app.js','frontend/js/memo-parser.js','frontend/js/clinical-report.js','frontend/css/styles.css','requirements.txt','Dockerfile','.dockerignore','render.yaml','.env.example','DEPLOY.md','data/manifest.json','data/pages.json','data/growth.json']
 manifest=json.loads((ROOT/'data/manifest.json').read_text())
 allow += ['data/sources/'+s['name'] for s in manifest]
 OUTPUT.parent.mkdir(exist_ok=True)

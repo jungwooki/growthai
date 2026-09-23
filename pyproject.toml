@@ -1,2 +1,17 @@
+[project]
+name = "mps-growthai"
+version = "0.1.0"
+description = "MPS Growth medical review workspace"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.128.8",
+    "uvicorn==0.39.0",
+    "python-multipart==0.0.20",
+    "PyMuPDF==1.26.5",
+    "openpyxl==3.1.5",
+    "httpx==0.28.1",
+    "python-dotenv==1.2.1",
+]
+
 [tool.vercel]
 entrypoint = "server:app"
