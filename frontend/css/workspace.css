@@ -40,3 +40,19 @@ textarea{max-width:100%;resize:vertical}input,select{min-width:0;max-width:100%}
 .clinical-highlights>div{flex-wrap:wrap}.clinical-highlights strong{overflow-wrap:anywhere}
 .steps .current b{background:#2563eb}.empty-features{color:#697386}
 @media(max-width:680px){.shell{margin-left:0}.sidebar{position:relative;width:100%;height:auto;padding:16px;inset:auto}.sidebar nav{display:flex;flex-wrap:wrap;margin-top:16px}.sidebar .workspace-label,.sidebar-bottom{display:none}.topbar{padding:12px 16px;height:auto;gap:12px;flex-wrap:wrap}.assessment-grid{display:block}.result-column{margin-top:22px}.photo-groups{gap:12px}.steps{font-size:11px;gap:8px}.clinical-highlights>div{align-items:flex-start;flex-direction:column}.page-actions{flex-direction:row;flex-wrap:wrap}}
+
+/* Keep the notice outside the two clinical work columns. */
+.budget-notice{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;padding:12px 16px;border:1px solid #e1dcf3;border-radius:12px;background:#f5f2ff;color:#697386;font-size:12px;line-height:1.6;margin-top:16px}
+.budget-notice>strong,.budget-notice>h2{margin:0;color:#5145cd;font-size:12px;flex-shrink:0}
+.budget-notice>p{margin:0}.budget-notice>details{flex-basis:100%;margin:0}.budget-notice>details>summary{padding:0;font-size:12px}
+.budget-notice [data-budget-breakdown],.budget-notice [data-budget-notice]{font-size:11px}
+.assessment-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px}
+.assessment-left,.media-column{min-width:0}.media-column{display:flex;flex-direction:column;gap:22px}
+.assessment-left .result-column{margin-top:22px}.assessment-footer{flex-wrap:wrap;line-height:1.7;margin-top:24px}
+.image-result{scroll-margin-top:24px}.photo-thumb{width:72px;height:64px}.photo-list .file-name{font-size:11px}
+@media(max-width:1100px){.assessment-grid{gap:16px}.photo-groups{grid-template-columns:1fr}.card{padding:18px}}
+@media(max-width:760px){.assessment-grid{grid-template-columns:minmax(0,1fr)}.media-column{margin-top:6px}.photo-groups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:400px){.photo-groups{grid-template-columns:1fr}}
+@media print{.budget-notice,.media-column>.card:not(.image-result){display:none!important}.assessment-grid{display:block}.image-result{break-before:page}.media-column{display:block}.assessment-left .result-column{margin:0}}
+
+.budget-notice>details{flex-basis:auto;border:0;padding:0}.budget-notice>details[open]{flex-basis:100%;padding-top:8px}.budget-notice>details>summary{display:list-item;cursor:pointer;color:#5145cd}

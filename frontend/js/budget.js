@@ -8,7 +8,7 @@ const BudgetUI=(()=>{
    const c=state.usage.centers[0];panel.replaceChildren();
    const title=document.createElement('strong');title.textContent=c?.name||'센터 사용 현황';panel.append(title);
    const info=document.createElement('p');info.textContent=state.usage.month+' · 판독 완료 '+(c?.completed_interpretations||0)+'회 · 결과지 읽기 완료 '+(c?.completed_extractions||0)+'회';panel.append(info);
-   const note=document.createElement('p');note.textContent='추가 사용 예산은 MPS 본부에서 승인합니다. 재판독은 별도로 집계됩니다.';panel.append(note);return;
+   const note=document.createElement('p');note.textContent='추가 사용 예산은 MPS 본부에서 승인합니다. 재판독은 별도로 집계됩니다.';const details=document.createElement('details');details.innerHTML='<summary>안내</summary>';details.append(note);panel.append(details);return;
   }
   if(!state?.enabled){panel.innerHTML='<strong>월 예산 관리</strong><p>비용 관리 저장소가 아직 연결되지 않았습니다. 사용액을 0원으로 간주하지 마세요.</p>';return;}
   panel.innerHTML='<h2>이번 달 예산</h2><p data-budget-total></p><p data-budget-breakdown></p><p data-budget-warning role="status"></p>'+
@@ -20,6 +20,7 @@ const BudgetUI=(()=>{
   panel.querySelector('[data-budget-breakdown]').textContent='AI '+money(state.ai_estimated_krw)+' · 처리 중/확인 대기 예비금 '+money(state.pending_krw)+' · 서버·저장소 월 예비비 '+money(state.overhead_estimated_krw);
   panel.querySelector('[data-budget-warning]').textContent=({normal:'예산 범위 안입니다.',notice:'예산의 70% 이상입니다. 이번 달 추가 사용량을 확인해주세요.',warning:'예산의 90% 이상입니다. 추가 예산 또는 새 판독 보류를 결정해주세요.',decision:'추가 사용 여부를 결정해주세요.'})[state.level];
   panel.querySelector('[data-budget-notice]').textContent=state.notice+' 환산 기준: 1달러 '+state.usd_krw+'원, 세금 계수 '+state.tax_multiplier+'. 예비금에는 실패·시간초과로 사용량을 확인하지 못한 요청도 포함됩니다. 앱 밖에서는 알림을 보내지 않습니다.';
+  if(panel.classList.contains('budget-notice')){const details=panel.querySelector('details');details.querySelector('summary').textContent='상세 · 예산 관리';details.prepend(panel.querySelector('[data-budget-breakdown]'));details.append(panel.querySelector('[data-budget-notice]'));}
   const input=panel.querySelector('#budget-new-limit');input.value=state.limit_krw;
   panel.querySelector('#budget-approve').onclick=async()=>{
    const output=panel.querySelector('#budget-action-status'),amount=Number(input.value);
