@@ -9,3 +9,7 @@ artifacts/
 .vercel/
 .env.*
 !.env.example
+
+.vercel
+
+.env.centers.local

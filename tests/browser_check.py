@@ -5,7 +5,7 @@ with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless=True)
  page=browser.new_page(viewport={'width':1440,'height':1100},device_scale_factor=1)
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
- page.goto('http://127.0.0.1:8093');page.wait_for_function("!document.querySelector('#connection').textContent.includes('확인 중')")
+ page.goto('http://127.0.0.1:8093/workspace');page.wait_for_function("!document.querySelector('#connection').textContent.includes('확인 중')")
  page.screenshot(path=str(ROOT/'artifacts/desktop.png'),full_page=True)
  page.click('#sample');page.uncheck('#use-ai');page.click('#analyze');page.wait_for_selector('.report-top')
  page.wait_for_selector('#growth-chart svg');assert page.locator('.metric').count()==4

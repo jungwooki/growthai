@@ -18,7 +18,7 @@ with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless=True)
  page=browser.new_page(viewport={'width':1440,'height':1080});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/api/evaluate',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(response,ensure_ascii=False)))
- page.goto('http://127.0.0.1:8093');page.wait_for_function("document.querySelector('#connection').textContent.includes('설정됨')")
+ page.goto('http://127.0.0.1:8093/workspace');page.wait_for_function("document.querySelector('#connection').textContent.includes('설정됨')")
  page.click('#sample');page.check('#use-ai');page.check('#consent');page.click('#analyze');page.wait_for_selector('.clinical-report')
  assert page.locator('.clinical-section').count()==9
  assert '13세 0개월' in page.locator('.clinical-highlights').inner_text()

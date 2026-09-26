@@ -1,0 +1,69 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+:root{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;color:#202436;background:#fff;font-synthesis:none;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button,summary{-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
+.hero{text-align:center;background:linear-gradient(180deg,#f0eaff 0%,#faf8ff 100%);padding:55px 20px 49px}
+.brand-badge{display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border:1px solid #ccd8ff;border-radius:999px;background:#fff;box-shadow:0 2px 8px #4d61a006;font-size:13px;font-weight:650;color:#39445d}
+.brand-badge img{object-fit:contain;filter:brightness(0)}.brand-badge b{color:#2456f5;font-weight:800}
+h1{margin:24px 0 15px;font-size:36px;line-height:1.42;letter-spacing:-.055em;font-weight:800;word-break:keep-all}.hero>p{margin:0;font-size:13px;line-height:1.7;color:#697796;letter-spacing:-.025em}
+.entry-cards{width:min(512px,calc(100% - 36px));margin:-5px auto 0;position:relative;display:grid;gap:16px}
+.service-card{display:block;padding:24px;border-radius:17px;text-decoration:none;color:inherit;transition:box-shadow .2s,transform .2s}
+.gradient-card{background:linear-gradient(117deg,#2861f1 0%,#7347b9 52%,#d52382 100%);color:#fff}
+a.service-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px #503dab14}
+a.service-card:focus-visible{outline:3px solid #94a8ff;outline-offset:4px}
+.card-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#ffffff24;border:1px solid #ffffff35}.card-icon svg{width:24px;height:24px}
+h2{font-size:18px;letter-spacing:-.035em;line-height:1.5;margin:11px 0 6px;font-weight:750}.service-card p{font-size:12px;line-height:1.8;margin:0;letter-spacing:-.02em;word-break:keep-all}.gradient-card p{color:#ffffffdc}
+#login-dialog{width:min(440px,calc(100% - 32px));max-height:calc(100svh - 40px);border:1px solid #e4e4f4;border-radius:20px;padding:30px 26px 24px;color:#202436;box-shadow:0 24px 80px #20243626;overflow-y:auto}
+#login-dialog::backdrop{background:#22233b55;backdrop-filter:blur(5px)}
+body:has(#login-dialog[open]){overflow:hidden}
+.dialog-close{position:absolute;right:12px;top:10px;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:#8590a4;font-size:25px;cursor:pointer}.dialog-close:hover{background:#f3efff}
+.login-heading{display:flex;align-items:center;gap:12px;margin:0 18px 24px 0}.login-heading .card-icon{background:#f2efff;color:#3863ff;border:0;flex-shrink:0}.login-heading h2{margin:0 0 3px;font-size:18px}.login-heading p{margin:0;font-size:12px;color:#75809a;line-height:1.6}
+form label{display:block;font-size:12px;font-weight:650;color:#394258;margin:0 0 8px}form input{width:100%;height:48px;border:1px solid #dfe3ef;border-radius:9px;background:#fcfcff;padding:0 14px;color:#202436;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}form input::placeholder{color:#9aa3b6;font-size:12px}form input:focus{border-color:#6d7ff8;box-shadow:0 0 0 3px #526fff12}#username{margin-bottom:19px}.password-field{position:relative}.password-field input{padding-right:60px}.password-field button{position:absolute;right:4px;top:4px;min-height:40px;min-width:48px;padding:0 9px;border:0;border-radius:6px;color:#78819a;background:transparent;font-size:11px;cursor:pointer}.password-field button:hover{background:#efedfc;color:#395bea}
+.login-button{display:flex;justify-content:center;align-items:center;gap:13px;width:100%;min-height:49px;margin-top:23px;border:0;border-radius:9px;background:linear-gradient(110deg,#2d62ef,#6e4bcb 65%,#a437aa);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:filter .2s,transform .2s}.login-button>span:last-child{font-size:18px;font-weight:400}.login-button:hover{filter:brightness(1.07);transform:translateY(-1px)}.login-button:disabled{opacity:.65;cursor:wait;transform:none}button:focus-visible,summary:focus-visible{outline:3px solid #99acff;outline-offset:3px}
+.account-help{text-align:center;margin:17px 0 0;font-size:11px;line-height:1.8;color:#626f89;word-break:keep-all}.account-help span{color:#8b94a8}.form-message{font-size:12px;line-height:1.65;margin:13px 0 0;border-radius:8px;padding:10px 12px;word-break:keep-all}.error{background:#fff1f2;color:#b4324d}.notice{background:#eff4ff;color:#425db2}
+.guide-card{border:1px solid #e7e7ef;background:#fff;box-shadow:0 5px 20px #26345103}.guide-card summary{list-style:none;cursor:pointer}.guide-card summary::-webkit-details-marker{display:none}.guide-card .card-icon{background:#f3efff;border:0;color:#3462ff}.guide-card p{color:#77839a}.guide-content{border-top:1px solid #eeedf6;margin-top:18px;padding-top:15px}.guide-content p+p{margin-top:10px}
+footer{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:27px 20px 30px;font-size:10px;line-height:1.7;color:#9aa2b3}footer strong{font-size:9px;letter-spacing:.1em;font-weight:700;color:#7a869d}.noscript-note{text-align:center;font-size:13px;color:#b4324d}
+@media(max-width:600px){.hero{padding:37px 18px 35px}.brand-badge{font-size:12px;padding:8px 14px}.brand-badge img{width:23px;height:23px}h1{font-size:27px;margin:22px 0 13px;line-height:1.45}.hero>p{font-size:12px}.entry-cards{width:calc(100% - 32px);gap:14px}.service-card{padding:22px}.service-card p{font-size:12px}form input{font-size:16px}.account-help{font-size:10px}footer{gap:8px;font-size:9px;margin-top:24px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+
+/* MPS portal */
+body{background:#fff}
+.portal-nav{height:80px;max-width:1160px;margin:auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+.portal-wordmark{display:flex;align-items:center;gap:10px;color:#202333;text-decoration:none;font-weight:750;font-size:16px;letter-spacing:-.025em}
+.portal-wordmark img{width:25px;height:25px;object-fit:contain}
+.portal-nav>a:last-child{font-size:13px;text-decoration:none;color:#697386}
+.hero{position:relative;padding:54px 24px 76px;background:radial-gradient(ellipse at 50% 0%,#eae4ff 0%,#f6f3ff 55%,#fcfbff 100%)}
+.hero h1{font-size:44px;line-height:1.28;letter-spacing:-.055em;margin:24px 0 18px}
+.hero h1 span{color:#5551ca}
+.hero>p{font-size:15px;color:#747c92;line-height:1.8}
+.brand-badge{font-size:12px;letter-spacing:.005em;background:#ffffffd9;border-color:#ddd8f7;padding:9px 16px;box-shadow:0 3px 14px #46398906}
+.entry-cards{width:min(560px,calc(100% - 40px));margin:-28px auto 0;gap:16px}
+.service-card{position:relative;padding:28px 30px;border-radius:20px;box-shadow:0 6px 24px #35305a04}
+.gradient-card{background:linear-gradient(120deg,#2e60ed 0%,#6950ce 56%,#c33393 100%);box-shadow:0 12px 30px #5b45be19}
+.service-card h2{font-size:21px;margin:18px 0 8px;font-weight:750}
+.service-card p{font-size:14px;line-height:1.75}
+.card-icon{width:44px;height:44px;border-radius:13px}
+.card-arrow{position:absolute;right:30px;top:31px;font-size:23px;color:inherit;opacity:.75;transition:transform .2s}
+a.service-card:hover .card-arrow{transform:translateX(4px)}
+.service-tag{position:absolute;right:28px;top:31px;font-size:11px;letter-spacing:.08em;color:#8b8ba5;font-weight:650}
+.guide-card{border-color:#e8e6f2}
+.hq-entry{background:#faf9fe;border:1px solid #e8e6f2}
+.hq-entry .card-icon{background:#eee9fc;color:#6d58c4;border:0}
+.hq-entry p{color:#778097}
+.portal-links{display:flex;gap:20px;justify-content:center;margin:30px 20px 0;font-size:13px}
+.portal-links a{color:#697386;text-decoration:none}
+.portal-links a:hover{color:#2563eb}
+footer{margin:25px 20px 35px;font-size:11px;color:#9a9daf}
+#login-dialog{border-radius:24px;padding:36px 30px 28px}
+.login-heading h2{font-size:21px}
+.login-heading p,.account-help{font-size:13px}
+form label{font-size:14px}
+.login-button{font-size:15px;min-height:52px;border-radius:12px}
+form input{height:52px;border-radius:12px}
+@media(max-width:600px){
+ .portal-nav{height:64px;padding:0 22px}.portal-wordmark{font-size:14px}.portal-nav>a:last-child{font-size:12px}
+ .hero{padding:36px 20px 60px}.hero h1{font-size:32px}.hero>p{font-size:13px}
+ .entry-cards{width:calc(100% - 32px);margin-top:-25px}.service-card{padding:25px 24px;border-radius:18px}
+ .service-card h2{font-size:20px}.service-card p{font-size:13px}.card-arrow{right:24px}
+ #login-dialog{padding:32px 24px 24px}
+}

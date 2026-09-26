@@ -9,7 +9,7 @@ with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless=True)
  page=browser.new_page(viewport={'width':1440,'height':1050})
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
- page.goto('http://127.0.0.1:8093');page.wait_for_selector('#intake-memo')
+ page.goto('http://127.0.0.1:8093/workspace');page.wait_for_selector('#intake-memo')
  page.fill('#intake-memo',followup)
  assert page.input_value('[name=height]')=='158.8'
  assert page.input_value('[name=previous_bone_age_months]')=='152'

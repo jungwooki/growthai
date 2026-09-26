@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f0ff"><title>MPS 본부 · Growth AI 사용 현황</title>
+<link rel="icon" href="frontend/assets/mps-symbol.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="frontend/css/centers.css">
+<script src="frontend/js/budget.js" defer></script><script src="frontend/js/headquarters.js" defer></script>
+</head>
+<body>
+<header class="topbar"><div class="nav-inner">
+<a class="brand" href="./"><img src="frontend/assets/mps-symbol.png" alt="" width="27" height="27"><span><b>MPS</b> 인증센터</span></a>
+<div class="nav-actions"><span class="role-badge">본부 관리자</span><button id="logout">로그아웃 <span aria-hidden="true">↗</span></button></div>
+</div></header>
+<section class="dashboard-hero"><div class="hero-inner">
+<p class="eyebrow"><span aria-hidden="true"></span> GROWTH AI · HEADQUARTERS</p>
+<h1>센터의 성장을,<br> 한눈에 살펴보세요.</h1>
+<p class="hero-description">MPS 인증센터의 월간 사용 현황과 예산을 관리합니다.</p>
+<div class="section-tabs"><span aria-current="page">월간 사용 현황</span><a href="#budget-panel">예산 관리 <span aria-hidden="true">↘</span></a></div>
+</div></section>
+<main>
+<section class="toolbar" aria-label="조회 기간"><div><span class="field-caption">REPORTING PERIOD</span><label for="month">조회 월 <input type="month" id="month" required></label></div><div class="toolbar-actions"><button id="refresh" class="primary">현황 조회</button><button id="download" disabled><span aria-hidden="true">↓</span> CSV 내려받기</button></div></section>
+<p id="status" role="status"></p>
+<section id="totals" class="totals" aria-label="월간 요약"><div class="metric">등록·집계 센터<strong>—</strong></div><div class="metric">판독 완료<strong>—</strong></div><div class="metric">AI 비용 추정<strong>—</strong></div></section>
+<section class="panel"><div class="panel-heading"><div><p class="section-kicker">CENTER ACTIVITY</p><h2>센터별 사용량</h2></div><span class="panel-caption">한국 시간 기준</span></div>
+<div class="table-scroll" tabindex="0" aria-label="센터별 사용량 표, 좌우 스크롤 가능"><table><thead><tr><th>지역</th><th>센터</th><th>결과지 읽기 완료</th><th>판독 완료</th><th>전체 AI 요청</th><th>사용량 확인 대기</th><th>AI 추정액</th></tr></thead><tbody id="center-rows"></tbody></table></div><p class="mobile-hint">표를 좌우로 밀어 전체 항목을 확인하세요.</p>
+</section>
+<section class="panel"><div class="panel-heading"><div><p class="section-kicker">REGIONAL OVERVIEW</p><h2>지역별 합계</h2></div><span class="panel-caption">지역 단위 이용 현황</span></div><div class="table-scroll" tabindex="0" aria-label="지역별 사용량 표"><table><thead><tr><th>지역</th><th>판독 완료</th><th>전체 AI 요청</th><th>AI 추정액</th></tr></thead><tbody id="region-rows"></tbody></table></div></section>
+<p id="usage-notice"></p><section id="budget-panel" class="panel budget-panel" aria-label="이번 달 예산"><h2>이번 달 예산</h2><p>로그인 후 예산 현황을 불러옵니다.</p></section>
+<footer><strong>MPS GROWTH</strong><span>근거를 연결하고, 성장을 이해하다.</span></footer>
+</main></body></html>

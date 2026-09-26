@@ -1,3 +1,5 @@
+> **2026-09-26 추가:** S3 비공개 직접 업로드 구현 및 설정 안내는 [private-upload-setup.md](docs/private-upload-setup.md)를 확인하세요. 아래 4MB 제한 설명은 저장소를 설정하지 않은 기존 서버 업로드 방식에 해당합니다. 실제 저장소 연결·운영 배포는 별도 단계입니다.
+
 # GitHub → Vercel 배포 및 오류 해결
 
 2026-09-24 점검: `https://growthai-two.vercel.app/api/status`에서 HTTP 503과
@@ -21,7 +23,7 @@ Production에 반드시 적용하고, Preview를 사용할 경우 Preview에도 
 
 API 키와 비밀번호는 GitHub 또는 HTML에 넣지 않습니다.
 설정 저장 후 Deployments에서 최신 코드로 **Redeploy**합니다. 환경변수 수정은 기존 배포에 소급 적용되지 않습니다.
-`/` 접속 시 브라우저 로그인 창이 나오면 APP_USERNAME/APP_PASSWORD를 입력합니다.
+`/` 접속 시 카드형 소개 화면이 표시됩니다. **AI 성장판독보조** 또는 **의료진 로그인** 카드를 누르면 로그인 창이 열립니다. 폼에 APP_USERNAME/APP_PASSWORD를 입력하면 `/workspace` 평가 화면으로 이동합니다. 로그인 상태는 HttpOnly·Secure·SameSite=Strict 쿠키로 최대 8시간 유지됩니다. 평가 화면의 **로그아웃**으로 쿠키를 지울 수 있으며, 계정 또는 비밀번호를 바꾸면 기존 세션이 무효화됩니다.
 OPENAI_API_KEY가 없어도 기본 수치 비교는 가능합니다.
 
 ## 프로젝트 구조와 빌드 설정
@@ -33,7 +35,7 @@ OPENAI_API_KEY가 없어도 기본 수치 비교는 가능합니다.
 - Framework Preset: **FastAPI** (`vercel.json`에 명시).
 - Build Command / Install Command / Output Directory: 기존 수동 Override를 끄고 기본값 사용.
 - `pyproject.toml`의 진입점은 `server:app`, Python 버전은 `.python-version`의 3.12.
-- `server.py` → `backend/server.py`가 `/`, `/index.html`, `/api/*`를 제공.
+- `server.py` → `backend/server.py`가 `/`, `/index.html` 소개 화면과 `/workspace` 평가 화면, `/api/*`를 제공.
 - `frontend/`는 CSS·JS·이미지. `data/*.json`은 계산·검색 기준 데이터.
 - 정적 SPA용 `/(.*) → /index.html` rewrite는 사용하지 않습니다.
 - 함수 실행시간은 300초로 설정했습니다. 실제 플랜·프로젝트 설정에서 적용 여부를 확인합니다.
@@ -59,7 +61,7 @@ Vercel 함수의 4.5MB 요청·응답 제한 때문에 이 앱의 첨부 합계�
 ## 확인 순서
 
 1. `/healthz`: HTTP 200, `{"status":"ok"}`.
-2. `/`: 로그인 창 → 입력 후 워크스페이스.
+2. `/`: 소개 카드 → 로그인 창 → 아이디·비밀번호 입력 → 워크스페이스.
 3. `/api/status`: 로그인 상태에서 JSON. 원본 누락은 `missing_sources` 확인.
 4. 가상 예시 → AI 끄기 → 기본 수치 확인 → 성장 곡선.
 5. 원본과 API 키를 모두 준비한 후에만 AI 검증.
@@ -99,7 +101,7 @@ GitHub push 및 새 배포는 이 로컬 수정 작업에서 실행하지 않았
 | `APP_PASSWORD` | 최소 16자 이상의 별도 접속 비밀번호 |
 | `TRUSTED_PROXY_IPS` | Render 프록시 뒤에서는 `*` |
 
-5. 배포가 완료되면 Render가 발급한 `https://…onrender.com` 주소에 접속합니다. 브라우저 로그인 창에서 위 의료진 계정과 비밀번호를 입력합니다. **예시 주소를 이미 발급된 주소로 사용하지 마세요.**
+5. 배포가 완료되면 Render가 발급한 `https://…onrender.com` 주소에 접속합니다. 첫 화면의 로그인 폼에 위 의료진 계정과 비밀번호를 입력합니다. **예시 주소를 이미 발급된 주소로 사용하지 마세요.**
 6. 가상 예시로 기본 평가를 확인합니다. 근거자료의 OpenAI 전송을 승인한 후 AI 옵션과 전송 확인을 선택하여 전체 평가를 검증합니다.
 
 Render의 `RENDER_EXTERNAL_HOSTNAME`을 읽어 허용 도메인을 설정합니다. 다른 서버나 사용자 도메인에서는 `ALLOWED_HOSTS=실제도메인`을 설정합니다. HTTPS는 호스팅 서비스/리버스 프록시가 종료하고 서버에 프로토콜을 전달해야 합니다. `TRUSTED_PROXY_IPS=*`는 외부 요청이 반드시 신뢰하는 프록시를 경유하는 플랫폼에서만 사용하고 일반 서버에서는 실제 프록시 주소를 지정하세요.

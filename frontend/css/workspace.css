@@ -1,3 +1,4 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 /* MPS workspace, adapted from emr/src/styles/design-system.css. */
 :root{--ink:#202333;--muted:#697386;--green:#2563eb;--green-dark:#1d4ed8;--line:#e8e9f2;--bg:#f8f9fc;--pale:#f3effe}
 body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;font-size:15px;color:var(--ink)}

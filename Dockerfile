@@ -3,7 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 APP_ENV=production
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt && useradd --create-home --uid 10001 growth
-COPY server.py index.html ./
+COPY server.py index.html workspace.html ./
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 COPY data/ ./data/
