@@ -128,7 +128,7 @@ def test_twelve_originals_over_four_mb_reach_evaluation(storage, monkeypatch):
     assert all(value[0] == raw for value in storage.values())
     assert client.get('/api/status').json()['upload_limit_bytes'] == media.TOTAL_LIMIT
 
-    async def fake_ai(patient, metrics, selected, attachments, summary):
+    async def fake_ai(patient, metrics, selected, attachments, summary, **kwargs):
         assert sum(c['type'] == 'input_image' for c in attachments) == 12
         markers = [c['text'] for c in attachments if c['type'] == 'input_text' and c['text'].startswith('PATIENT_FILE')]
         assert len(markers) == 12

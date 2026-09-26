@@ -123,11 +123,11 @@ def reference_image(path,page_number,modified_ns):
         pix=p.get_pixmap(matrix=fitz.Matrix(scale,scale),alpha=False)
         return base64.b64encode(pix.tobytes('jpeg')).decode()
 
-def render_references(selected,visual,sources,root):
+def render_references(selected,visual,sources,root,paths=None):
     content=[]
     for page in selected:
         if page['id'] not in visual:continue
-        path=Path(root)/'data/sources'/sources[page['source']]['name']
+        path=paths[page['source']] if paths is not None else Path(root)/'data/sources'/sources[page['source']]['name']
         data=reference_image(str(path),page['page'],path.stat().st_mtime_ns)
         content += [dict(type='input_text',text=f"REFERENCE_PAGE {page['id']} | 참고자료, 현재 환자 아님"),dict(type='input_image',image_url='data:image/jpeg;base64,'+data,detail='high')]
     return content

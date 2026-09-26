@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from .growth_history import compute_history
 from .mps_guidance import sports_plan
 from .web_access import WebAccess
-from . import media_storage, result_extraction, budget, centers, vision_stages
+from . import media_storage, result_extraction, budget, centers, vision_stages, reference_storage
 from starlette.concurrency import run_in_threadpool
 from .vision_report import ClinicalReport, PROMPT, select_references, render_references, strict_schema, validate_report
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
@@ -222,18 +222,20 @@ def js():return FileResponse(ROOT/'frontend/js/app.js')
 @app.get('/styles.css')
 def css():return FileResponse(ROOT/'frontend/css/styles.css')
 @app.get('/api/status')
-def status():
-    missing=[s['id'] for s in MANIFEST if not (ROOT/'data/sources'/s['name']).is_file()]
+def status(request:Request):
+    available=reference_storage.availability(MANIFEST,ROOT,request)
+    missing=[sid for sid,ready in available.items() if not ready]
     direct=media_storage.configured()
     return dict(hosted=ACCESS.production,ai_configured=bool(os.getenv('OPENAI_API_KEY')),references_ready=not missing,missing_sources=missing,upload_mode='s3' if direct else 'server',upload_file_limit_bytes=media_storage.FILE_LIMIT if direct else 15*1024*1024,upload_max_files=media_storage.MAX_FILES if direct else 25,upload_limit_bytes=media_storage.TOTAL_LIMIT if direct else (4_000_000 if os.getenv('VERCEL')=='1' else 120*1024*1024),model=os.getenv('OPENAI_MODEL','gpt-4.1'),source_count=len(MANIFEST),page_count=len(PAGES),text_pages=sum(p['readable'] for p in PAGES))
 @app.get('/api/library')
-def library():return [{**s,'available':(ROOT/'data/sources'/s['name']).is_file()} for s in MANIFEST]
+def library(request:Request):
+    available=reference_storage.availability(MANIFEST,ROOT,request)
+    return [{**s,'available':available[s['id']]} for s in MANIFEST]
 @app.get('/api/sources/{sid}')
 def source(sid:str,request:Request):
     if sid not in SOURCES:raise HTTPException(404,'근거 파일을 찾을 수 없습니다.')
     path=ROOT/'data/sources'/SOURCES[sid]['name']
-    if not path.is_file():raise HTTPException(503,'배포 서버에 근거 원본이 없습니다. data/sources 자료를 비공개 배포 환경에 설치해주세요.')
-    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME') or media_storage.configured():
         client=media_storage.request_client(request)
         try:
             object_key=f'references/{sid}{path.suffix}'
@@ -248,6 +250,7 @@ def source(sid:str,request:Request):
         finally:
             client.close()
         return RedirectResponse(url,status_code=302)
+    if not path.is_file():raise HTTPException(503,'배포 서버에 근거 원본이 없습니다. 비공개 원본 저장소 연결을 확인해주세요.')
     if os.getenv('VERCEL')=='1' and path.stat().st_size>4_000_000:
         raise HTTPException(413,'이 원본은 현재 웹 배포의 다운로드 한도를 초과합니다. 로컬 자료실에서 열어주세요.')
     return FileResponse(path)
@@ -374,7 +377,7 @@ def ai_failure_message(response):
         return prefix+detail
     return prefix+'429 응답의 상세 원인을 확인할 수 없습니다. API Billing과 모델별 Limits를 확인하세요. 결제 부족으로 단정할 수 없습니다.'
 
-async def ask_ai(p,metrics,selected,attachments,file_summary=None):
+async def ask_ai(p,metrics,selected,attachments,file_summary=None,request=None):
     started=time.perf_counter()
     key=os.getenv('OPENAI_API_KEY')
     if not key:raise HTTPException(503,'AI 연결 전입니다. 서버 .env에 OPENAI_API_KEY를 설정하고 다시 시작하세요.')
@@ -383,9 +386,14 @@ async def ask_ai(p,metrics,selected,attachments,file_summary=None):
     file_summary=file_summary or []
     context=ai_patient_context(p,metrics)
     try:
-        reference_content=render_references(selected,visual,SOURCES,ROOT)
-    except (OSError,ValueError,RuntimeError):
-        raise HTTPException(503,'AI 비교에 필요한 근거 원본이 없거나 읽을 수 없습니다. 배포 서버의 data/sources 자료를 확인해주세요.')
+        needed={page['source'] for page in selected if page['id'] in visual}
+        if all(reference_storage.local_path(SOURCES[sid],ROOT).is_file() for sid in needed):
+            reference_content=render_references(selected,visual,SOURCES,ROOT)
+        else:
+            paths=await run_in_threadpool(reference_storage.resolve,[SOURCES[sid] for sid in sorted(needed)],ROOT,request)
+            reference_content=await run_in_threadpool(render_references,selected,visual,SOURCES,ROOT,paths)
+    except (OSError,ValueError,RuntimeError,BotoCoreError,ClientError):
+        raise HTTPException(503,'AI 비교에 필요한 근거 원본이 없거나 읽을 수 없습니다. 비공개 원본 저장소 연결과 파일 무결성을 확인해주세요.')
     observed = None
     observation_usage = {}
     observation_cached = 0
@@ -440,14 +448,14 @@ def preview(patient:Patient):
     return dict(metrics=calculate(patient))
 
 @app.post('/api/evaluate')
-async def evaluate(patient:str=Form(...),files:list[UploadFile]=File(default=[]),file_groups:str=Form(default='')):
+async def evaluate(request:Request,patient:str=Form(...),files:list[UploadFile]=File(default=[]),file_groups:str=Form(default='')):
     try:p=Patient.model_validate_json(patient)
     except (ValidationError,ValueError) as e:raise HTTPException(422,'입력값을 확인해주세요. '+str(e).split('\n')[1][:220])
     try:groups=json.loads(file_groups) if file_groups else ['extra']*len(files)
     except (ValueError,TypeError):raise HTTPException(422,'검사 부위 정보를 읽을 수 없습니다.')
     if not isinstance(groups,list) or any(not isinstance(g,str) for g in groups):raise HTTPException(422,'검사 부위 정보 형식이 올바르지 않습니다.')
     attachments,file_summary=await parse_files(files,groups)
-    return await evaluate_parsed(p,attachments,file_summary)
+    return await evaluate_parsed(p,attachments,file_summary,request)
 
 @app.post('/api/uploads')
 def uploads(batch:media_storage.UploadBatch,request:Request):
@@ -486,11 +494,11 @@ async def evaluate_uploaded(body:StoredEvaluation,request:Request):
             attachments.extend(content);file_summary.extend(summary)
     finally:
         await run_in_threadpool(storage_client.close)
-    result=await evaluate_parsed(body.patient,attachments,file_summary)
+    result=await evaluate_parsed(body.patient,attachments,file_summary,request)
     result['exam_id']=manifest['exam_id']
     return result
 
-async def evaluate_parsed(p,attachments,file_summary):
+async def evaluate_parsed(p,attachments,file_summary,request=None):
     sheets,ultrasound=result_extraction.partition(attachments,file_summary)
     reviewed=None
     if p.use_ai and sheets:
@@ -512,7 +520,7 @@ async def evaluate_parsed(p,attachments,file_summary):
     metrics=calculate(p);selected=search_pages('초음파 골단 성장 maturity ultrasound '+p.observations+' '+p.question+' '+p.bone_method)
     result=dict(patient=p.model_dump(mode='json',exclude={'consent','reviewed_records'}),metrics=metrics,files=file_summary,sources=[source_view(s) for s in selected],ai=None,ai_error=None,banding='판단 보류 · AI 영상 판독 미실행',created=date.today().isoformat(),coverage=dict(total=411,searchable=268),reviewed_records=reviewed)
     if p.use_ai:
-        try:result['ai']=await ask_ai(p,metrics,selected,attachments,file_summary)
+        try:result['ai']=await ask_ai(p,metrics,selected,attachments,file_summary,request=request)
         except HTTPException as e:
             if e.status_code==402:raise
             result['ai_error']=e.detail

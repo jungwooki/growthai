@@ -29,7 +29,7 @@ if '--serve' in sys.argv:
                  location='Row 2', reference='', note='Unreadable', status='needs_review')],
             warnings=['Synthetic only'])], fingerprints=result_extraction.fingerprints(summaries),
             model='synthetic', usage={'input_tokens': 1, 'output_tokens': 1, 'total_tokens': 2})
-    async def synthesize(p, metrics, selected, content, summaries):
+    async def synthesize(p, metrics, selected, content, summaries, **kwargs):
         counts['synthesize'] += 1
         assert sum(c['type'] == 'input_image' for c in content) == 1
         text = next(c['text'] for c in content if c.get('text', '').startswith('REVIEWED_RESULT'))

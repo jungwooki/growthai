@@ -73,3 +73,22 @@
 - 변경된 프롬프트 실제 API 가상 시험: 12장+참고영상18장, 2회 호출,
   89.38초, 입력32,934 / 출력3,911. 가상 영상은 판독 불가, 골연령 판단 보류.
   실제 환자·로그인 운영 흐름 또는 임상 정확도를 검증한 시험은 아님.
+
+## Vercel 원본 누락 재발 — 2026-09-26 로컬 수정, 미배포
+
+- 신고 주소: https://growthai-two.vercel.app/workspace. AWS Function URL과 별도 배포다.
+- Git에서 제외된 data/sources 원본은 GitHub 배포에 포함되지 않는다. 기존 status/library/AI 렌더러는 로컬 파일만 확인해 S3 원본을 이용하지 못했다.
+- 로컬 수정: status/library는 로컬 파일이 없을 때 인증된 S3 HEAD와 크기로 연결을 확인한다. AI는 필요한 원본만 요청별 인증으로 내려받고 매니페스트 SHA256 검증 후 임시 캐시에 원자적으로 저장한다. 자료실은 로컬 파일 없이도 인증 확인 후 5분 서명 URL을 발급한다.
+- 실제 S3 자격 증명/권한이 없는 배포는 계속 unavailable로 표시한다. 이 변경만으로 Vercel의 미완료 OIDC 연결이 해결되는 것은 아니다.
+- 비공개 ZIP artifacts/mps-growth-web.zip에 원본 11개와 수정 코드를 포함했다. 원본 해시 검증, 비밀값 제외, ZIP 내부 .gitignore의 원본 제외 설정을 적용했다. S3 연결이 없는 Vercel은 이 로컬 비공개 원본을 포함하여 재배포해야 한다. 원본을 Git에 추가하지 않는다.
+- 검증: 기존+신규 테스트 전체 120개 통과 후, 추가한 인증 실패 및 AI 경로 시험을 포함해 관련 12개 통과. 실제 유료 AI 요청은 하지 않았다.
+- 운영 미반영: Vercel 앱이 haeons-projects 팀 접근을 403으로 거부하며 재인증을 요구한다. AWS 앱도 재인증 필요, 로컬 growthai 프로필 없음. 운영 환경변수/배포를 변경하지 않았다.
+
+## Vercel 운영 반영 — 2026-09-27
+
+- 재인증 후 growthai 프로젝트/배포 조회 성공. 플러그인 deploy_to_vercel은 Tool not found여서 별도로 승인받은 Vercel CLI 60.1.3 로그인으로 배포했다.
+- 배포 ID: dpl_7RepUr9vn5zMqdwKAi8Gvrf3WXGL, 상태 READY / production.
+- 운영 주소: https://growthai-two.vercel.app, 배포 주소: https://growthai-5rudld8td-haeons-projects.vercel.app.
+- 로컬 비공개 data/sources 11개와 수정된 reference_storage 모듈을 배포 API 파일 목록에서 확인했다. /healthz HTTP 200 확인.
+- Vercel 운영 환경변수에는 S3 설정이 없다. 현재 배포는 포함된 원본을 사용한다. S3 연결 완료 전에는 GitHub 소스만 재배포하면 원본이 다시 누락될 수 있으므로, 원본 11개를 갖춘 로컬에서 `npx vercel deploy --prod --yes`로 배포해야 한다.
+- CLI로 가져온 환경변수로 검증용 앱 로그인은 401이었다. 실제 사용자 비밀번호를 변경하지 않았으며, 로그인 후 status/AI 요청은 확인하지 못했다. 유료 AI 요청 없음. 사용자 로그인 세션에서 새로고침 확인 필요.

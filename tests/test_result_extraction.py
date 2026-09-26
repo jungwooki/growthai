@@ -42,7 +42,7 @@ def test_extract_review_then_synthesize_without_sheet_images(monkeypatch, storag
         assert sum(c['type'] == 'input_image' for c in content) == 1
         return dict(documents=[dict(file_id='F02', measurements=[measurement()], warnings=[])],
                     fingerprints=extraction.fingerprints(summaries), usage={'total_tokens': 10})
-    async def synthesize(p, metrics, selected, content, summaries):
+    async def synthesize(p, metrics, selected, content, summaries, **kwargs):
         calls.append('synthesize')
         assert sum(c['type'] == 'input_image' for c in content) == 1
         assert summaries[0]['visual'] and not summaries[1]['visual']
