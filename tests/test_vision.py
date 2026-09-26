@@ -14,7 +14,7 @@ def test_height_policy_midpoint_and_phase_gate(phase,expanded):
  page=dict(id='R03:p46',text='reference')
  evidence=[dict(source_id=page['id'],kind='figure',quote='',explanation='comparison')]
  r=blank_report()
- r['phv'].update(status='estimated',phase=phase,evidence=evidence)
+ r['phv'].update(status='estimated',phase=phase,mps_stage={'pre_phv':0,'accelerating':1,'post_phv':4}.get(phase),evidence=evidence)
  r['adult_height'].update(status='estimated',basis='ai_synthesis',low=173.5,center=174,high=176.5,method='test synthesis',evidence=evidence)
  data,_,_=validate_report(ClinicalReport(**r),[page],{page['id']},[],lambda p:p)
  assert data['adult_height']['center']==175
@@ -37,7 +37,7 @@ def test_invalid_evidence_and_no_images_cannot_produce_estimate():
 
 def test_figure_citation_requires_sent_reference_image():
  page=dict(id='R03:p46',text='참고자료의 실제 설명입니다.')
- r=blank_report();r['phv'].update(status='estimated',label='성장시기 추정',evidence=[dict(source_id=page['id'],kind='figure',quote='',explanation='해당 표')])
+ r=blank_report();r['phv'].update(status='estimated',phase='pre_phv',mps_stage=0,label='성장시기 추정',evidence=[dict(source_id=page['id'],kind='figure',quote='',explanation='해당 표')])
  data,_,_=validate_report(ClinicalReport(**r),[page],set(),[],lambda p:p)
  assert data['phv']['status']=='insufficient'
  data,_,_=validate_report(ClinicalReport(**r),[page],{page['id']},[],lambda p:p)

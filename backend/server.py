@@ -1,10 +1,13 @@
 from pathlib import Path
 from datetime import date
 from typing import Optional, Literal
-import asyncio, base64, hashlib, json, os, re, time
+import asyncio, base64, hashlib, json, mimetypes, os, re, time
+from urllib.parse import quote
+from botocore.exceptions import BotoCoreError, ClientError
 import fitz, httpx
 from dotenv import load_dotenv
 from .growth_history import compute_history
+from .mps_guidance import sports_plan
 from .web_access import WebAccess
 from . import media_storage, result_extraction, budget, centers, vision_stages
 from starlette.concurrency import run_in_threadpool
@@ -230,11 +233,18 @@ def source(sid:str,request:Request):
     if sid not in SOURCES:raise HTTPException(404,'근거 파일을 찾을 수 없습니다.')
     path=ROOT/'data/sources'/SOURCES[sid]['name']
     if not path.is_file():raise HTTPException(503,'배포 서버에 근거 원본이 없습니다. data/sources 자료를 비공개 배포 환경에 설치해주세요.')
-    if os.getenv('AWS_LAMBDA_FUNCTION_NAME') and path.stat().st_size>4_000_000:
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
         client=media_storage.request_client(request)
         try:
+            object_key=f'references/{sid}{path.suffix}'
+            client.head_object(Bucket=os.environ['MEDIA_S3_BUCKET'],Key=object_key)
+            disposition='attachment' if path.suffix.lower() in {'.xls','.xlsx','.ppt','.pptx'} else 'inline'
             url=client.generate_presigned_url('get_object',Params={
-                'Bucket':os.environ['MEDIA_S3_BUCKET'],'Key':f'references/{sid}{path.suffix}'},ExpiresIn=60)
+                'Bucket':os.environ['MEDIA_S3_BUCKET'],'Key':object_key,
+                'ResponseContentType':mimetypes.guess_type(path.name)[0] or 'application/octet-stream',
+                'ResponseContentDisposition':disposition+"; filename*=UTF-8''"+quote(path.name)},ExpiresIn=300)
+        except (BotoCoreError,ClientError):
+            raise HTTPException(503,'자료실 원본 연결을 확인할 수 없습니다. 관리자에게 해당 자료 번호를 알려주세요.')
         finally:
             client.close()
         return RedirectResponse(url,status_code=302)
@@ -418,6 +428,7 @@ async def ask_ai(p,metrics,selected,attachments,file_summary=None):
             clinical.image_readings = observed.image_readings
             clinical.limitations.append('현재 사진의 관찰 기록을 먼저 작성한 뒤 참고영상과 종합 비교했습니다. 최종 종합 단계는 현재 사진을 직접 다시 보지 않았으므로 의료진 원본 대조가 필요합니다.')
         report,rejected,warnings=validate_report(clinical,selected,visual,file_summary,source_view)
+        report['sports_plan'] = sports_plan(p,report)
         await budget.completed(response)
         return dict(duration_seconds=elapsed,usage={k:payload.get('usage',{}).get(k,0)+observation_usage.get(k,0) for k in ['input_tokens','output_tokens','total_tokens']},cached_tokens=payload.get('usage',{}).get('input_tokens_details',{}).get('cached_tokens',0)+observation_cached,clinical_report=report,rejected_citations=rejected,model=os.getenv('OPENAI_MODEL','gpt-4.1'),reference_images=len(reference_content)//2,patient_images=sum(f.get('visual',False) for f in file_summary),analysis_passes=2 if observed else 1,sources=[source_view(s) for s in selected],notice='AI 영상 비교 판독 초안입니다. 임상 정확도는 검증되지 않았으며 의료진의 원본 대조와 최종 판독이 필요합니다. 수치 범위는 검증된 신뢰구간이 아닙니다.')
     except HTTPException:raise
