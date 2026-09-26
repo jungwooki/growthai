@@ -17,7 +17,7 @@ def main():
     tree = ast.parse((ROOT/'scripts/package_web.py').read_text(encoding='utf-8'))
     allow = next(ast.literal_eval(node.value) for node in tree.body
                  if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id=='allow' for t in node.targets))
-    allow += ['backend/lambda_entry.py']
+    allow += ['backend/lambda_entry.py', 'backend/runtime_config.py']
     allow += ['data/sources/'+s['name'] for s in json.loads((ROOT/'data/manifest.json').read_text(encoding='utf-8'))]
     allow = sorted(set(allow))
     output = ROOT/'artifacts/growthai-lambda.zip'
