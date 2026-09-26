@@ -1,4 +1,5 @@
 """Application-wide estimated spend ledger; no patient content or credentials."""
+import asyncio
 import json
 import os
 import re
@@ -182,19 +183,50 @@ def approve(month, expected_limit, new_limit):
     return change(month, operation)
 
 
+def release_rejected(reservation, code):
+    month, request_id = reservation
+    def operation(ledger):
+        entry = ledger['entries'][request_id]
+        if entry['state'] != 'pending': return
+        entry.update(state='rejected', reserved_krw=entry['krw'], krw=0,
+                     rejection_code=code, completed=False)
+    change(month, operation)
+
+
+def rate_rejection(response):
+    if response.status_code != 429: return None
+    try:
+        error = response.json().get('error', {})
+        code = error.get('code') or error.get('type')
+        if code not in {'rate_limit_exceeded','rate_limit_error','insufficient_quota'}: return None
+        message = str(error.get('message',''))
+        counts = {label:int(match.group(1).replace(',','')) for label in ('Limit','Requested')
+                  if (match:=re.search(r'\b'+label+r'\s*:?\s*([\d,]+)',message,re.I))}
+        oversized = counts.get('Requested',0)>counts.get('Limit',float('inf'))
+        return code, oversized
+    except (ValueError,AttributeError,TypeError): return None
+
+
 async def post_ai(http_client, *, payload, headers, stage):
     if centers.enabled() and not enabled():
         raise HTTPException(503,'센터 사용량 기록 저장소 연결이 필요합니다. 본부에 문의해주세요.')
-    reservation = await run_in_threadpool(reserve, payload, stage) if enabled() else None
-    # Failed/time-out calls retain their allowance until usage is reconciled.
-    response = await http_client.post('https://api.openai.com/v1/responses', headers=headers, json=payload)
-    if reservation:
-        response.extensions['growthai_reservation']=reservation
-    if reservation and response.status_code == 200:
-        data = response.json()
-        if isinstance(data, dict) and isinstance(data.get('usage'), dict):
-            await run_in_threadpool(settle, reservation, data)
-    return response
+    for attempt in range(2):
+        reservation = await run_in_threadpool(reserve, payload, stage) if enabled() else None
+        # Network failures remain uncertain; explicit provider rejection is different.
+        response = await http_client.post('https://api.openai.com/v1/responses', headers=headers, json=payload)
+        if reservation: response.extensions['growthai_reservation'] = reservation
+        rejection = rate_rejection(response)
+        if rejection:
+            code, oversized = rejection
+            if reservation: await run_in_threadpool(release_rejected, reservation, code)
+            if attempt == 0 and code != 'insufficient_quota' and not oversized:
+                await asyncio.sleep(61)
+                continue
+        if reservation and response.status_code == 200:
+            data = response.json()
+            if isinstance(data,dict) and isinstance(data.get('usage'),dict):
+                await run_in_threadpool(settle,reservation,data)
+        return response
 
 
 async def completed(response):

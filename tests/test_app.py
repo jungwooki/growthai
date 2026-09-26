@@ -99,7 +99,7 @@ def test_ai_contract_with_mocked_response(monkeypatch):
    assert json['store'] is False
    texts=[__import__('json').loads(c['text']) for c in json['input'][0]['content'] if c['type']=='input_text' and c['text'].startswith('{')]
    context={k:v for item in texts for k,v in item.items()}
-   assert json['max_output_tokens']==8000
+   assert json['max_output_tokens']==6000
    assert 'code' not in context['patient'] and 'birth' not in context['patient']
    assert context['reference_pages'][0]['category']
    assert json['text']['format']['strict'] is True

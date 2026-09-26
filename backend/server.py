@@ -1,12 +1,12 @@
 from pathlib import Path
 from datetime import date
 from typing import Optional, Literal
-import base64, hashlib, json, os, re, time
+import asyncio, base64, hashlib, json, os, re, time
 import fitz, httpx
 from dotenv import load_dotenv
 from .growth_history import compute_history
 from .web_access import WebAccess
-from . import media_storage, result_extraction, budget, centers
+from . import media_storage, result_extraction, budget, centers, vision_stages
 from starlette.concurrency import run_in_threadpool
 from .vision_report import ClinicalReport, PROMPT, select_references, render_references, strict_schema, validate_report
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
@@ -376,15 +376,36 @@ async def ask_ai(p,metrics,selected,attachments,file_summary=None):
         reference_content=render_references(selected,visual,SOURCES,ROOT)
     except (OSError,ValueError,RuntimeError):
         raise HTTPException(503,'AI 비교에 필요한 근거 원본이 없거나 읽을 수 없습니다. 배포 서버의 data/sources 자료를 확인해주세요.')
-    # Static source prefix first permits provider prompt caching across evaluations.
-    # Visual pages retain their full images; avoid also sending duplicate OCR text.
-    reference_pages=[{**page,'text':'' if page['id'] in visual else page['text'],
-        'filename':SOURCES[page['source']]['name'],'category':SOURCES[page['source']]['category']} for page in selected]
-    content=[dict(type='input_text',text=json.dumps(dict(reference_pages=reference_pages),ensure_ascii=False,separators=(',',':')))]+reference_content
-    content += [dict(type='input_text',text=json.dumps(dict(patient=context,files=file_summary),ensure_ascii=False,separators=(',',':')))]+attachments
+    observed = None
+    observation_usage = {}
+    observation_cached = 0
+    reference_pages = vision_stages.reference_context(selected, visual)
+    for page in reference_pages: page['category'] = SOURCES[page['source']]['category']
+    content = [dict(type='input_text', text=json.dumps(dict(reference_pages=reference_pages), ensure_ascii=False, separators=(',', ':')))] + reference_content
     try:
-        async with httpx.AsyncClient(timeout=240) as client:
-            response=await budget.post_ai(client,stage='interpretation',headers={'Authorization':f'Bearer {key}'},payload=dict(model=os.getenv('OPENAI_MODEL','gpt-4.1'),store=False,instructions=PROMPT,input=[dict(role='user',content=content)],text={'format':{'type':'json_schema','name':'growth_image_report','strict':True,'schema':strict_schema()}},max_output_tokens=8000))
+        async with asyncio.timeout(250), httpx.AsyncClient(timeout=180) as client:
+            if any(f.get('visual') for f in file_summary):
+                first_payload = dict(model=os.getenv('OPENAI_MODEL','gpt-4.1'),store=False,
+                    instructions=vision_stages.INSTRUCTIONS,
+                    input=[dict(role='user',content=vision_stages.image_files(attachments))],
+                    text={'format':{'type':'json_schema','name':'image_observations','strict':True,'schema':vision_stages.schema()}},
+                    max_output_tokens=5000)
+                first = await budget.post_ai(client,stage='interpretation',headers={'Authorization':f'Bearer {key}'},payload=first_payload)
+                if first.status_code != 200: raise HTTPException(502,ai_failure_message(first))
+                first_data = first.json()
+                observed = vision_stages.parse_observations(first_data,file_summary)
+                observation_usage = first_data.get('usage',{})
+                observation_cached = observation_usage.get('input_tokens_details',{}).get('cached_tokens',0)
+                # Separate token windows; do not immediately consume the same 30k window.
+                await asyncio.sleep(61)
+            compact_files = [{k:f[k] for k in ('id','group','visual')} for f in file_summary]
+            content += [dict(type='input_text',text=json.dumps(dict(patient=context,files=compact_files),ensure_ascii=False,separators=(',',':')))]
+            content += [part for part in attachments if part['type']=='input_text' and part.get('text','').startswith('REVIEWED_RESULT_SHEETS:')]
+            instructions = PROMPT
+            if observed:
+                content += [dict(type='input_text',text='CURRENT_IMAGE_OBSERVATIONS: '+observed.model_dump_json())]
+                instructions += '\n분리 처리: 현재 환자 사진은 앞 단계에서 직접 관찰했다. 이번 호출에는 현재 사진 대신 CURRENT_IMAGE_OBSERVATIONS와 실제 참고영상이 있다. 관찰하지 않은 구조를 추가하지 말고 관찰 기록과 참고영상을 비교한다. image_readings는 전달한 관찰을 유지한다. 현재 사진을 이 호출에서 직접 비교했다고 표현하지 않는다. 관찰 기록만으로 부족한 항목은 보류한다. limitations에 이 분리 처리 한계를 명시한다.'
+            response=await budget.post_ai(client,stage='interpretation',headers={'Authorization':f'Bearer {key}'},payload=dict(model=os.getenv('OPENAI_MODEL','gpt-4.1'),store=False,instructions=instructions,input=[dict(role='user',content=content)],text={'format':{'type':'json_schema','name':'growth_image_report','strict':True,'schema':strict_schema()}},max_output_tokens=6000))
         if response.status_code!=200:
             raise HTTPException(502,ai_failure_message(response))
         payload=response.json()
@@ -393,11 +414,14 @@ async def ask_ai(p,metrics,selected,attachments,file_summary=None):
         output=''.join(c.get('text','') for item in payload.get('output',[]) for c in item.get('content',[]) if c.get('type')=='output_text')
         if not output:raise HTTPException(502,'AI가 판독 보고서를 반환하지 않았습니다. 영상과 요청 내용을 확인해주세요.')
         clinical=ClinicalReport.model_validate_json(output)
+        if observed:
+            clinical.image_readings = observed.image_readings
+            clinical.limitations.append('현재 사진의 관찰 기록을 먼저 작성한 뒤 참고영상과 종합 비교했습니다. 최종 종합 단계는 현재 사진을 직접 다시 보지 않았으므로 의료진 원본 대조가 필요합니다.')
         report,rejected,warnings=validate_report(clinical,selected,visual,file_summary,source_view)
         await budget.completed(response)
-        return dict(duration_seconds=elapsed,usage={k:payload.get('usage',{}).get(k,0) for k in ['input_tokens','output_tokens','total_tokens']},cached_tokens=payload.get('usage',{}).get('input_tokens_details',{}).get('cached_tokens',0),clinical_report=report,rejected_citations=rejected,model=os.getenv('OPENAI_MODEL','gpt-4.1'),reference_images=len(reference_content)//2,patient_images=sum(f.get('visual',False) for f in file_summary),analysis_passes=1,sources=[source_view(s) for s in selected],notice='AI 영상 비교 판독 초안입니다. 임상 정확도는 검증되지 않았으며 의료진의 원본 대조와 최종 판독이 필요합니다. 수치 범위는 검증된 신뢰구간이 아닙니다.')
+        return dict(duration_seconds=elapsed,usage={k:payload.get('usage',{}).get(k,0)+observation_usage.get(k,0) for k in ['input_tokens','output_tokens','total_tokens']},cached_tokens=payload.get('usage',{}).get('input_tokens_details',{}).get('cached_tokens',0)+observation_cached,clinical_report=report,rejected_citations=rejected,model=os.getenv('OPENAI_MODEL','gpt-4.1'),reference_images=len(reference_content)//2,patient_images=sum(f.get('visual',False) for f in file_summary),analysis_passes=2 if observed else 1,sources=[source_view(s) for s in selected],notice='AI 영상 비교 판독 초안입니다. 임상 정확도는 검증되지 않았으며 의료진의 원본 대조와 최종 판독이 필요합니다. 수치 범위는 검증된 신뢰구간이 아닙니다.')
     except HTTPException:raise
-    except httpx.TimeoutException:raise HTTPException(504,'영상 판독 시간이 초과되었습니다. 파일 수를 줄여 다시 시도해주세요.')
+    except (httpx.TimeoutException, TimeoutError):raise HTTPException(504,'영상 판독 시간이 초과되었습니다. 파일 수를 줄여 다시 시도해주세요.')
     except (httpx.HTTPError,ValidationError,ValueError):raise HTTPException(502,'AI 연결 또는 판독 보고서 형식 오류입니다. 다시 시도해주세요.')
 
 @app.post('/api/preview')

@@ -151,3 +151,29 @@ def test_lambda_execution_role_uses_default_credentials(monkeypatch):
     assert media_storage.s3_client() == 'role-client'
     monkeypatch.setenv('VERCEL', '1')
     assert not media_storage.configured()
+
+
+def test_oversized_429_releases_only_explicit_rejection(ledger):
+    response = httpx.Response(429, json={'error': {'code': 'rate_limit_exceeded', 'message': 'Limit 30000 Requested 38352'}})
+    client = SimpleNamespace(post=AsyncMock(return_value=response))
+    result = asyncio.run(budget.post_ai(client, payload=payload(), headers={}, stage='interpretation'))
+    assert result.status_code == 429
+    assert client.post.await_count == 1
+    assert budget.status()['pending_calls'] == 0
+    assert budget.status()['ai_estimated_krw'] == 0
+    record = json.loads(next(iter(ledger.objects.values()))[0])
+    entry = next(iter(record['entries'].values()))
+    assert entry['state'] == 'rejected' and entry['reserved_krw'] > 0
+
+
+def test_transient_rate_limit_retries_once_and_records_actual_usage(ledger, monkeypatch):
+    rejected = httpx.Response(429, json={'error': {'code': 'rate_limit_exceeded', 'message': 'Limit 30000 Requested 1000 Used 29500'}})
+    success = httpx.Response(200, json={'usage': {'input_tokens': 1000, 'output_tokens': 500}})
+    client = SimpleNamespace(post=AsyncMock(side_effect=[rejected,success]))
+    sleep = AsyncMock()
+    monkeypatch.setattr(budget.asyncio, 'sleep', sleep)
+    asyncio.run(budget.post_ai(client, payload=payload(), headers={}, stage='interpretation'))
+    assert client.post.await_count == 2
+    sleep.assert_awaited_once_with(61)
+    assert budget.status()['pending_calls'] == 0
+    assert budget.status()['settled_calls'] == 1

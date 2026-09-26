@@ -119,7 +119,7 @@ def render_references(selected,visual,sources,root):
         if page['id'] not in visual:continue
         path=Path(root)/'data/sources'/sources[page['source']]['name']
         data=reference_image(str(path),page['page'],path.stat().st_mtime_ns)
-        content += [dict(type='input_text',text=f"REFERENCE_PAGE {page['id']} | {sources[page['source']]['name']} | p.{page['page']} | 참고자료이며 현재 환자 영상 아님"),dict(type='input_image',image_url='data:image/jpeg;base64,'+data,detail='high')]
+        content += [dict(type='input_text',text=f"REFERENCE_PAGE {page['id']} | 참고자료, 현재 환자 아님"),dict(type='input_image',image_url='data:image/jpeg;base64,'+data,detail='high')]
     return content
 
 def strict_schema():
